@@ -2,13 +2,11 @@
 var App = new function() {
   return {
     Refs: {
-      RESOURCES_LIST: 'resources/list',
-      RESOURCES_LOOKUP: 'resources/lookup'
+      RESOURCES_LIST: 'resources',
     },
     initialize: function() {
       this._fdb = new Firebase('http://gamma.firebase.com/opencountmadison/');
-      this._resourcesList = this._fdb.child(this.Refs.RESOURCES_LIST);
-      this._resourcesLookup = this._fdb.child(this.Refs.RESOURCES_LOOKUP);
+      this._resources = this._fdb.child(this.Refs.RESOURCES_LIST);
 
       // HACK: just use Madison for now
       //this._initMap();
@@ -92,7 +90,7 @@ var App = new function() {
       });
       
       $(document).bind('resource.edited', function(event, resourceData) {
-        $('#add-form').get(0).reset();
+        $('#edit-form').get(0).reset();
 
         $('#success-edit').show();
         setTimeout(function() {
@@ -101,7 +99,7 @@ var App = new function() {
       });
 
       $(document).bind('resource.oneAdded', function(event, resource) {
-        self._renderResource(resource);
+        self._addAndRenderResource(resource);
       });
       
       $(document).bind('resource.noSuchResource', function(event, resource) {
@@ -110,8 +108,17 @@ var App = new function() {
     },
 
     _bindDataEvents: function() {
-      this._resourcesList.on('child_added', function(resourceSnapshot) {
+      var self = this;
+
+      this._resources.on('child_added', function(resourceSnapshot) {
         $(document).trigger('resource.oneAdded', resourceSnapshot.val());
+      });
+      this._resources.on('child_changed', function(resourceSnapshot) {
+        var resource = resourceSnapshot.val();
+        var el = $('#resources a[data-resourcetag="' + resource.tag + '"]');
+        if(el.length) {
+          self._updateResourceElement(resource, el);
+        }
       });
     },
 
@@ -130,19 +137,14 @@ var App = new function() {
 
 
       // Check to see if the resource already exists in firebase, otherwise create it
-      this._resourcesLookup.child(tag).transaction(function(currentEntry) {
+      this._resources.child(tag).transaction(function(currentEntry) {
         if(currentEntry === null) {
-          return {
-            t: 1
-          };
+          return resourceData;
         }
       }, function(success) {
         if(!success) {
           $(document).trigger('resource.alreadyExists', resourceData);
         } else {
-          // Add it to the list of resources
-          self._resourcesList.push(resourceData);
-
           $(document).trigger('resource.created', resourceData);
         }
       });
@@ -151,7 +153,7 @@ var App = new function() {
     _editResource: function(tag, max, count) {
 
       // Check if it exists
-      this._resourcesLookup.child(tag).transaction(function(currentEntry) {
+      this._resources.child(tag).transaction(function(currentEntry) {
         var now = new Date();
         var newData = {
           count: count,
@@ -173,21 +175,39 @@ var App = new function() {
       }, function(success) {
         if(!success) {
         } else {
-          $(document).trigger('resource.edited', resourceData);
+          $(document).trigger('resource.edited');
         }
       });
     },
 
-    _renderResource: function(resourceData) {
+    _dateStr: function(date) {
+
+      return date.getHours() + ':' + date.getMinutes() + ' ' + (date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getYear();
+    },
+
+    _addAndRenderResource: function(resourceData) {
       var list = $('#resources');
-
-      var modifiedDate = new Date(resourceData.last_modified);
-
-      list.append('<li data-theme="c"><a href="#" data-resourcetag="' + resourceData.tag + '" data-transition="slide">' + resourceData.name + '<span class="ui-li-count">' + resourceData.count + '</span><p class="ui-li-aside"><strong>' + modifiedDate + '</strong>PM</p></a></li>');
-
+      var newLi = $('<li data-theme="c"></li>');
+      this._renderResource(resourceData, newLi);
+      list.append(newLi);
       list.listview('refresh');
+    },
+
+    _renderResource: function(resourceData, el) {
+      var modifiedDate = this._dateStr(new Date(resourceData.last_modified));
+      var addedDate = this._dateStr(new Date(resourceData.added));
+
+      el.html('<a href="#" data-resourcetag="' + resourceData.tag + '" data-transition="slide"><p>' + resourceData.name + '</p><p><strong>Current as of <span class="modified">' + modifiedDate + '</span></strong></p><p>First added ' + addedDate + '</p><span class="ui-li-count count">' + resourceData.count + '</span></a>');
+    },
+
+    _updateResourceElement: function(resourceData, el) {
+      var modifiedDate = this._dateStr(new Date(resourceData.last_modified));
+      $('.modified', el).text(modifiedDate);
+      $('.count', el).text(resourceData.count);
     }
   };
 };
 
-App.initialize();
+$(document).ready(function() {
+  App.initialize();
+});
