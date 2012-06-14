@@ -185,7 +185,7 @@ var App = {
     var modifiedDate = this._dateStr(new Date(resourceData.last_modified));
     var addedDate = this._dateStr(new Date(resourceData.added));
 
-    el.html('<div data-resourcetag="' + resourceData.tag + '" data-transition="slide"><h3>' + resourceData.name + '</h3><p><strong>Current as of <span class="modified">' + modifiedDate + '</span></strong></p><p>First added ' + addedDate + '</p><span class="ui-li-count count">' + resourceData.count + '/' + resourceData.max + '</span></div>');
+    el.html('<div data-resourcetag="' + resourceData.tag + '" data-transition="slide"><h3>' + resourceData.name + '</h3><p><strong>Current as of <span class="modified">' + modifiedDate + '</span></strong></p><p>First added ' + addedDate + '</p><span class="ui-li-count count">' + resourceData.count + ' of ' + resourceData.max + '</span></div>');
   },
 
   // Update a single resource item
