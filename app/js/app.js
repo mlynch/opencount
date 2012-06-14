@@ -1,11 +1,8 @@
 
 var App = {
-  Refs: {
-    RESOURCES_LIST: 'resources',
-  },
   initialize: function() {
-    this._fdb = new Firebase('http://gamma.firebase.com/opencountmadison/');
-    this._resources = this._fdb.child(this.Refs.RESOURCES_LIST);
+    this._fdb = new Firebase('http://gamma.firebase.com/opencountdemo/');
+    this._resources = this._fdb.child('resources');
 
     this._bindEvents();
     this._bindDataEvents();
@@ -95,7 +92,7 @@ var App = {
 
     this._resources.on('child_changed', function(resourceSnapshot) {
       var resource = resourceSnapshot.val();
-      var el = $('#resources a[data-resourcetag="' + resource.tag + '"]');
+      var el = $('#resources [data-resourcetag="' + resource.tag + '"]');
       if(el.length) {
         self._updateResourceElement(resource, el);
       }
@@ -170,7 +167,8 @@ var App = {
 
   // Simple date formatting function
   _dateStr: function(date) {
-    return date.getHours() + ':' + date.getMinutes() + ' ' + (date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getYear();
+    var minutes = date.getMinutes() >= 10 ? date.getMinutes() : '0' + date.getMinutes();
+    return date.getHours() + ':' + minutes + ' ' + (date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getYear();
   },
 
   // Render a single resource list item and add it to the listview
